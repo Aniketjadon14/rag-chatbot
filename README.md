@@ -1,2 +1,0 @@
-# rag-chatbot
-rag-chatbot
