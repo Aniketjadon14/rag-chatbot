@@ -5,6 +5,7 @@ from openai import OpenAI
 from app.utils import parse_pdf, parse_docx, parse_txt
 from app.config import OPENAI_API_KEY
 import chromadb
+import shutil
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -61,23 +62,43 @@ class RAGSystem:
         )
         docs_and_sources = []
         for doc, meta in zip(results["documents"][0], results["metadatas"][0]):
+            print("📄 Retrieved doc chunk:\n", doc[:300])  # print 1st 300 chars
+            print("🗂️ Source file:", meta["filename"])
             docs_and_sources.append((doc, meta["filename"]))
+        self.last_docs = docs_and_sources
         return docs_and_sources
 
     def generate_answer(self, query):
-        docs = self.retrieve(query)
-        context = "\n\n".join([f"Source: {fname}\nContent: {chunk}" for chunk, fname in docs])
-        prompt = f"""Use the context below to answer the question. 
-Always cite the source filename after each point using (Source: filename).
+            docs = self.retrieve(query)
 
-Context:
-{context}
+            # Prepare context for LLM
+            context = "\n\n".join([
+                f"Content: {chunk}\n(Source: {fname})"
+                for chunk, fname in docs
+            ])
 
-Question: {query}
-Answer:"""
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": prompt}]
-        )
-        print("Response:", response.choices[0].message.content)
-        return response.choices[0].message.content
+            prompt = f"""Use the context below to answer the question.
+
+        Context:
+        {context}
+
+        Question: {query}
+        Answer:"""
+
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[{"role": "user", "content": prompt}]
+            )
+
+            answer = response.choices[0].message.content.strip()
+            print("Response:", answer)
+
+            # Optional: store for follow-up endpoint
+            self.last_docs = docs
+            self.last_answer = answer
+
+            return answer
+
+
+    def get_last_retrieved_docs(self):
+        return getattr(self, "last_docs", [])
