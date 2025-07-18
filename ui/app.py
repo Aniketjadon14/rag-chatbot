@@ -11,11 +11,11 @@ if st.button("Submit"):
         if response.status_code == 200:
             result = response.json()
 
-            # ✅ Show the Answer
+           
             st.markdown("### ✅ Answer")
             st.write(result["answer"])
 
-            # ✅ Show Source File Links
+         
             st.markdown("### 📄 Source Documents")
             unique_filenames = set()
             for source in result.get("sources", []):

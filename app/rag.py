@@ -37,7 +37,7 @@ class RAGSystem:
                 text = parse_txt(file_path)
             else:
                 continue
-            # 🔥 Use better chunking
+          
             chunks = self.chunk_text(text, max_words=100)
             for chunk in chunks:
                 self.text_chunks.append(chunk)
@@ -59,10 +59,11 @@ class RAGSystem:
         results = self.collection.query(
             query_embeddings=[query_emb],
             n_results=top_k
+            
         )
         docs_and_sources = []
         for doc, meta in zip(results["documents"][0], results["metadatas"][0]):
-            print("📄 Retrieved doc chunk:\n", doc[:300])  # print 1st 300 chars
+            print("📄 Retrieved doc chunk:\n", doc[:300]) 
             print("🗂️ Source file:", meta["filename"])
             docs_and_sources.append((doc, meta["filename"]))
         self.last_docs = docs_and_sources
@@ -71,7 +72,6 @@ class RAGSystem:
     def generate_answer(self, query):
             docs = self.retrieve(query)
 
-            # Prepare context for LLM
             context = "\n\n".join([
                 f"Content: {chunk}\n(Source: {fname})"
                 for chunk, fname in docs
